@@ -3,98 +3,253 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>팩트체크 도구</title>
+<title>뉴스룸 fact 체크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
-  body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-size: 20px; line-height: 1.6; margin: 0; background: #f4f5f7; color: #1b1f24; }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 20px; }
-  h1 { font-size: 32px; margin: 8px 0 16px; }
-  .card { background: #fff; border: 1px solid #d0d5db; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
-  label { display: block; font-weight: bold; margin: 8px 0 4px; }
-  table { border-collapse: collapse; width: 100%; font-size: 17px; }
-  th, td { border: 1px solid #d0d5db; padding: 6px 8px; vertical-align: top; text-align: left; word-break: break-all; }
-  th { background: #eef0f3; white-space: nowrap; }
-  td.pre { white-space: pre-wrap; }
-  .tablewrap { overflow-x: auto; }
-  select { font-size: 20px; padding: 8px; border: 2px solid #aab2bb; border-radius: 8px; font-family: inherit; }
-  input[type=password], input[type=text], textarea { width: 100%; box-sizing: border-box; font-size: 20px; padding: 10px; border: 2px solid #aab2bb; border-radius: 8px; font-family: inherit; }
+  :root { --blue: #4664e6; --blue-dark: #3350c9; --line: #d7d7d7; --muted: #666; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-size: 18px; line-height: 1.55; margin: 0; background: #fff; color: #000; }
+  a { color: var(--blue); }
+  .inner { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+  /* 맨 위: 로고 + 오른쪽 버튼 */
+  header.top { height: 82px; display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; align-items: baseline; text-decoration: none; color: #000; cursor: pointer; }
+  .logo b { font-size: 38px; font-weight: 900; letter-spacing: -1.5px; }
+  .logo span { font-size: 30px; font-weight: 300; margin-left: 8px; }
+  .hbtns { display: flex; gap: 6px; align-items: center; }
+  .hbtn { font-size: 14px; font-weight: 500; height: 30px; padding: 0 14px; margin: 0; border-radius: 3px; border: 1px solid var(--blue); background: var(--blue); color: #fff; cursor: pointer; }
+  .hbtn:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+  .hbtn.line { background: #fff; color: var(--blue); }
+  .hbtn.line:hover { background: #eef1fd; }
+
+  /* 메뉴 줄 */
+  nav.menu { box-shadow: 0 3px 4px -1px rgba(0,0,0,.18); background: #fff; position: relative; z-index: 2; }
+  nav.menu .inner { display: flex; }
+  .tab { position: relative; height: 72px; padding: 0 16px; margin: 0; background: none; border: 0; border-bottom: 4px solid transparent; border-radius: 0; color: #000; font-size: 19.5px; font-weight: 400; cursor: pointer; }
+  .tab + .tab::before { content: ""; position: absolute; left: 0; top: 30px; width: 1px; height: 14px; background: #ccc; }
+  .tab:hover { color: var(--blue); background: none; }
+  .tab.on { border-bottom-color: var(--blue); font-weight: 700; }
+
+  /* 키 설정 띠 */
+  #keyPanel { background: #f6f7fb; border-bottom: 1px solid var(--line); padding: 22px 0 18px; }
+  #keyPanel .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* 본문 2단: 왼쪽 본문 + 오른쪽 안내 */
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 0 50px; padding-top: 22px; padding-bottom: 60px; }
+  h2 { font-size: 26px; font-weight: 700; margin: 0 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  label { display: block; font-size: 16px; font-weight: 500; margin: 14px 0 6px; }
+
+  /* 큰 입력 패널 (메인 기사 자리) */
+  .hero { min-height: 448px; border-radius: 8px; padding: 38px 36px 30px; color: #fff; background: linear-gradient(135deg, #1b2340 0%, #11142a 55%, #27325f 100%); }
+  .hero h1 { font-size: 36px; line-height: 1.3; font-weight: 700; margin: 0 0 14px; }
+  .hero .lead { font-size: 16px; line-height: 1.7; color: rgba(255,255,255,.82); border-top: 1px solid rgba(255,255,255,.28); padding-top: 14px; margin-bottom: 4px; }
+  .hero label { color: rgba(255,255,255,.88); }
+  .hero .note { color: rgba(255,255,255,.7); }
+  .hero textarea, .hero input[type=text] { background: rgba(255,255,255,.96); }
+  #verify { font-size: 19px; font-weight: 700; padding: 12px 34px; }
+
+  /* 입력칸 */
+  input[type=password], input[type=text], textarea { width: 100%; font-size: 18px; padding: 11px 12px; border: 1px solid #bdbdbd; border-radius: 4px; font-family: inherit; color: #000; background: #fff; }
+  input:focus, textarea:focus, select:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 2px rgba(70,100,230,.25); }
   textarea { min-height: 110px; resize: vertical; }
-  button { font-size: 20px; font-family: inherit; padding: 10px 22px; border: 0; border-radius: 8px; background: #1d4ed8; color: #fff; cursor: pointer; margin: 10px 8px 0 0; }
-  button.sub { background: #5b6470; }
+  select { font-size: 18px; padding: 9px 10px; border: 1px solid #bdbdbd; border-radius: 4px; font-family: inherit; background: #fff; }
+
+  /* 버튼 */
+  button { font-family: inherit; font-size: 17px; font-weight: 500; padding: 9px 20px; border: 1px solid var(--blue); border-radius: 3px; background: var(--blue); color: #fff; cursor: pointer; margin: 12px 8px 0 0; transition: background .15s, color .15s; }
+  button:hover:not(:disabled) { background: var(--blue-dark); border-color: var(--blue-dark); }
+  button.sub { background: #fff; color: var(--blue); }
+  button.sub:hover:not(:disabled) { background: #eef1fd; border-color: var(--blue); }
   button:disabled { opacity: .5; cursor: wait; }
-  #verify { font-size: 24px; padding: 14px 36px; }
-  .note { font-size: 16px; color: #5b6470; }
-  #error { color: #d00000; font-weight: bold; white-space: pre-wrap; margin-bottom: 18px; }
-  #status { color: #374151; margin-bottom: 12px; }
-  .badge { display: inline-block; font-size: 38px; font-weight: bold; color: #fff; padding: 10px 30px; border-radius: 12px; }
+  button.small { font-size: 15px; padding: 5px 14px; margin: 8px 0 0 0; }
+  nav.menu button.tab, .hbtn { margin: 0; }
+
+  .note { font-size: 15px; color: var(--muted); }
+  #error { color: #d00000; font-weight: 700; white-space: pre-wrap; margin-top: 16px; }
+  #status { color: var(--muted); margin-top: 12px; }
+
+  /* 결과 카드 */
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 24px 26px; margin-top: 20px; background: #fff; }
+  .card h2 { margin-bottom: 4px; }
+  .badge { display: inline-block; font-size: 30px; font-weight: 700; color: #fff; padding: 6px 22px; border-radius: 4px; margin: 6px 0 4px; }
   .v-fact { background: #15803d; } .v-mostly { background: #65a30d; } .v-half { background: #d97706; }
   .v-mostlyfalse { background: #ea580c; } .v-false { background: #b91c1c; } .v-hold { background: #6b7280; }
-  .summary { font-size: 24px; font-weight: bold; margin: 14px 0 6px; }
-  .ev { border-top: 1px solid #d0d5db; padding: 12px 0; }
-  .ev .t { font-weight: bold; }
-  .ev .m { font-size: 16px; color: #5b6470; word-break: break-all; }
-  h2 { font-size: 26px; margin: 0 0 8px; }
-  #articleView { white-space: pre-wrap; line-height: 1.9; border: 2px solid #d0d5db; border-radius: 8px; padding: 12px; margin-top: 12px; background: #fafafa; }
-  #articleView mark { color: #1b1f24; border-radius: 4px; padding: 2px 3px; background: #fff3b0; border-bottom: 3px dashed #d4a017; }
+  .summary { font-size: 22px; font-weight: 700; margin: 14px 0 6px; line-height: 1.4; }
+  .ev { border-top: 1px solid var(--line); padding: 14px 0; }
+  .ev .t { font-weight: 700; }
+  .ev .m { font-size: 15px; color: var(--muted); word-break: break-all; }
+  .mini { display: inline-block; font-size: 14px; font-weight: 700; color: #fff; padding: 1px 10px; border-radius: 3px; margin-left: 8px; }
+  .tag { display: inline-block; font-size: 13px; font-weight: 500; padding: 1px 8px; border-radius: 3px; margin-left: 6px; color: #fff; }
+  .tag.used { background: #15803d; } .tag.unused { background: #8a8a8a; }
+
+  /* 표 */
+  table { border-collapse: collapse; width: 100%; font-size: 16px; border-top: 2px solid #000; }
+  th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; vertical-align: top; text-align: left; word-break: break-all; }
+  th { background: #f7f7f7; white-space: nowrap; font-weight: 700; }
+  td.pre { white-space: pre-wrap; }
+  .tablewrap { overflow-x: auto; }
+
+  /* 기사 원문 표시 */
+  #articleView { white-space: pre-wrap; line-height: 1.9; border: 1px solid var(--line); border-radius: 6px; padding: 14px; margin-top: 14px; background: #fafafa; }
+  #articleView mark { color: #000; border-radius: 3px; padding: 2px 3px; background: #fff3b0; border-bottom: 3px dashed #d4a017; }
   #articleView mark.h-fact { background: #bbf7d0; border-bottom: 3px solid #15803d; }
   #articleView mark.h-mostly { background: #d9f99d; border-bottom: 3px solid #65a30d; }
   #articleView mark.h-half { background: #fde68a; border-bottom: 3px solid #d97706; }
   #articleView mark.h-mostlyfalse { background: #fed7aa; border-bottom: 3px solid #ea580c; }
   #articleView mark.h-false { background: #fecaca; border-bottom: 3px solid #b91c1c; }
   #articleView mark.h-hold { background: #e5e7eb; border-bottom: 3px solid #6b7280; }
-  .mini { display: inline-block; font-size: 16px; font-weight: bold; color: #fff; padding: 2px 12px; border-radius: 8px; margin-left: 8px; }
-  button.small { font-size: 17px; padding: 6px 16px; margin: 6px 0 0 0; }
-  .tag { font-size: 14px; padding: 2px 8px; border-radius: 6px; margin-left: 6px; color: #fff; }
-  .tag.used { background: #15803d; } .tag.unused { background: #6b7280; }
+
+  /* 아래 4칸 안내 카드 (썸네일 + 두 줄 설명) */
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 26px; }
+  .cardx { cursor: default; }
+  .cardx .thumb { height: 101px; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 38px; font-weight: 900; transition: filter .15s; }
+  .cardx:hover .thumb { filter: brightness(1.12); }
+  .cardx p { margin: 8px 0 0; font-size: 16px; line-height: 1.45; font-weight: 500; }
+  .t1 { background: linear-gradient(135deg, #4664e6, #2b3d99); } .t2 { background: linear-gradient(135deg, #2a7f62, #14503d); }
+  .t3 { background: linear-gradient(135deg, #8a5cd0, #4b2f86); } .t4 { background: linear-gradient(135deg, #e0793b, #a24a14); }
+
+  /* 오른쪽 안내 */
+  .side h2 { font-size: 26px; }
+  .recent { list-style: none; margin: 0 0 30px; padding: 0; }
+  .recent li { display: flex; align-items: center; gap: 8px; padding: 10px 2px; font-size: 16px; line-height: 1.4; cursor: pointer; }
+  .recent li:hover span.c { color: var(--blue); text-decoration: underline; }
+  .recent .c { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .recent .empty { cursor: default; color: var(--muted); }
+  .legend h3 { font-size: 16px; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid #000; }
+  .legend div { display: flex; gap: 10px; align-items: flex-start; padding: 7px 0; font-size: 15px; border-bottom: 1px solid var(--line); }
+  .legend .mini { margin: 0; min-width: 104px; text-align: center; }
+
+  /* 아래 */
+  footer.foot { background: #f5f5f5; border-top: 1px solid var(--line); padding: 34px 0 44px; font-size: 14px; color: #888; line-height: 1.8; }
+  footer.foot b { color: #444; }
+
+  @media (max-width: 960px) {
+    .main { grid-template-columns: 1fr; }
+    .cards { grid-template-columns: repeat(2, 1fr); }
+    #keyPanel .grid2 { grid-template-columns: 1fr; }
+    .tab { padding: 0 10px; font-size: 17px; }
+    .hero { padding: 26px 20px; } .hero h1 { font-size: 28px; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>팩트체크 도구</h1>
 
-  <div class="card">
-    <label for="tavilyKey">Tavily 키</label>
-    <input type="password" id="tavilyKey" autocomplete="off">
-    <label for="geminiKey">Claude 키 (sk-ant-...)</label>
-    <input type="password" id="geminiKey" autocomplete="off">
-    <button id="saveKeys" class="sub">키 저장</button><button id="clearKeys" class="sub">키 지우기</button>
+<div class="inner">
+  <header class="top">
+    <a class="logo" id="logoLink" title="처음으로"><b>뉴스룸</b><span>fact 체크</span></a>
+    <div class="hbtns">
+      <button class="hbtn" id="keyToggle">키 설정</button>
+      <button class="hbtn line" id="goRecord">검증 기록</button>
+    </div>
+  </header>
+</div>
+
+<nav class="menu">
+  <div class="inner">
+    <button class="tab on" data-tab="verify">한 문장 검증</button>
+    <button class="tab" data-tab="article">기사 점검</button>
+    <button class="tab" data-tab="record">검증 기록</button>
+  </div>
+</nav>
+
+<div id="keyPanel" hidden>
+  <div class="inner">
+    <div class="grid2">
+      <div>
+        <label for="tavilyKey" style="margin-top:0">Tavily 키</label>
+        <input type="password" id="tavilyKey" autocomplete="off">
+      </div>
+      <div>
+        <label for="geminiKey" style="margin-top:0">Claude 키 (sk-ant-...)</label>
+        <input type="password" id="geminiKey" autocomplete="off">
+      </div>
+    </div>
+    <button id="saveKeys">키 저장</button><button id="clearKeys" class="sub">키 지우기</button>
     <div class="note">키는 이 브라우저에만 저장됩니다. 공용 PC에서는 사용 후 꼭 "키 지우기"를 누르세요.</div>
     <div id="keyMsg" class="note"></div>
   </div>
-
-  <div class="card">
-    <label for="claim">검증할 주장 (한 문장)</label>
-    <textarea id="claim" placeholder="예: 2024년 3월 ○○시는 ○○ 사업에 100억 원을 투입했다."></textarea>
-    <label for="officialSites">관련 기관 공식 홈페이지 주소 (선택, 여러 개는 띄어쓰기로 구분, "정부·공공기관"으로 표시됨)</label>
-    <input type="text" id="officialSites" autocomplete="off" placeholder="예: www.busan.go.kr  www.example.or.kr">
-    <div class="note">적어 두면 그 사이트의 발표 내용을 먼저 찾습니다. 비워 두면 정부·공공기관과 통계를 먼저 찾고, 이어서 언론사, 백과사전, 블로그·커뮤니티 순으로 찾습니다.</div>
-    <button id="verify">검증하기</button>
-  </div>
-
-  <div class="card" id="articleCard">
-    <h2>기사 점검</h2>
-    <label for="articleUrl">기사 주소 (선택)</label>
-    <input type="text" id="articleUrl" autocomplete="off" placeholder="https://...">
-    <button id="fetchArticle" class="sub">본문 불러오기</button>
-    <label for="articleText">기사 초고 또는 보도자료</label>
-    <textarea id="articleText" style="min-height:220px" placeholder="여기에 붙여 넣으세요."></textarea>
-    <button id="extractBtn">확인할 문장 뽑기</button>
-    <div id="articleMsg" class="note"></div>
-    <div id="sentenceList"></div>
-    <div id="articleView" hidden></div>
-  </div>
-
-  <div id="error"></div>
-  <div id="status"></div>
-  <div id="result"></div>
-
-  <div class="card" id="recordCard">
-    <h2>검증 기록</h2>
-    <div class="note">이 브라우저에만 저장됩니다. 브라우저 데이터를 지우면 함께 사라지니, 중요한 기록은 엑셀로 내려받아 두세요.</div>
-    <button id="exportCsv" class="sub">엑셀로 내려받기</button>
-    <div id="recordMsg" class="note"></div>
-    <div class="tablewrap" id="recordTable"></div>
-  </div>
 </div>
+
+<div class="inner main">
+  <div class="leftcol">
+
+    <section id="paneVerify">
+      <div class="hero">
+        <h1>확인할 주장을 입력하세요</h1>
+        <div class="lead">검색된 근거만 보고 사실 · 대체로 사실 · 절반의 사실 · 대체로 사실 아님 · 사실 아님 · 판단 유보 중 하나로 판정합니다.</div>
+        <label for="claim">검증할 주장 (한 문장)</label>
+        <textarea id="claim" placeholder="예: 2024년 3월 ○○시는 ○○ 사업에 100억 원을 투입했다."></textarea>
+        <label for="officialSites">관련 기관 공식 홈페이지 주소 (선택, 여러 개는 띄어쓰기로 구분, "정부·공공기관"으로 표시됨)</label>
+        <input type="text" id="officialSites" autocomplete="off" placeholder="예: www.busan.go.kr  www.example.or.kr">
+        <div class="note">적어 두면 그 사이트의 발표 내용을 먼저 찾습니다. 비워 두면 정부·공공기관과 통계를 먼저 찾고, 이어서 언론사, 백과사전, 블로그·커뮤니티 순으로 찾습니다.</div>
+        <button id="verify">검증하기</button>
+      </div>
+    </section>
+
+    <section id="paneArticle" hidden>
+      <div id="articleCard">
+        <h2>기사 점검</h2>
+        <label for="articleUrl" style="margin-top:0">기사 주소 (선택)</label>
+        <input type="text" id="articleUrl" autocomplete="off" placeholder="https://...">
+        <button id="fetchArticle" class="sub">본문 불러오기</button>
+        <label for="articleText">기사 초고 또는 보도자료</label>
+        <textarea id="articleText" style="min-height:220px" placeholder="여기에 붙여 넣으세요."></textarea>
+        <button id="extractBtn">확인할 문장 뽑기</button>
+        <div id="articleMsg" class="note"></div>
+        <div id="sentenceList"></div>
+        <div id="articleView" hidden></div>
+      </div>
+    </section>
+
+    <section id="paneRecord" hidden>
+      <div id="recordCard">
+        <h2>검증 기록</h2>
+        <div class="note">이 브라우저에만 저장됩니다. 브라우저 데이터를 지우면 함께 사라지니, 중요한 기록은 엑셀로 내려받아 두세요.</div>
+        <button id="exportCsv" class="sub">엑셀로 내려받기</button>
+        <div id="recordMsg" class="note"></div>
+        <div class="tablewrap" id="recordTable"></div>
+      </div>
+    </section>
+
+    <div id="out">
+      <div id="error"></div>
+      <div id="status"></div>
+      <div id="result"></div>
+    </div>
+
+    <div class="cards" id="paneCards">
+      <div class="cardx"><div class="thumb t1">1</div><p>정부·공공기관과 통계를 먼저 찾습니다</p></div>
+      <div class="cardx"><div class="thumb t2">2</div><p>이유 문장마다 근거 원문을 대조합니다</p></div>
+      <div class="cardx"><div class="thumb t3">3</div><p>근거에 있는 내용만으로 판정합니다</p></div>
+      <div class="cardx"><div class="thumb t4">4</div><p>기자가 최종 판정과 메모를 남깁니다</p></div>
+    </div>
+  </div>
+
+  <aside class="side">
+    <h2>최근 검증</h2>
+    <ul class="recent" id="recentList"></ul>
+    <div class="legend">
+      <h3>판정 기준</h3>
+      <div><span class="mini v-fact">사실</span>근거가 주장과 정확히 맞음</div>
+      <div><span class="mini v-mostly">대체로 사실</span>핵심은 맞고 사소한 차이</div>
+      <div><span class="mini v-half">절반의 사실</span>맞는 부분과 틀린 부분이 섞임</div>
+      <div><span class="mini v-mostlyfalse">대체로 사실 아님</span>핵심이 근거와 다름</div>
+      <div><span class="mini v-false">사실 아님</span>근거와 정면으로 어긋남</div>
+      <div><span class="mini v-hold">판단 유보</span>믿을 만한 근거가 부족함</div>
+    </div>
+  </aside>
+</div>
+
+<footer class="foot">
+  <div class="inner">
+    <b>뉴스룸 fact 체크</b><br>
+    검색으로 찾은 근거만 사용하며, 근거가 없거나 블로그·커뮤니티뿐이면 판단을 유보합니다.<br>
+    AI 판정은 참고용이며 최종 판단은 기자의 "데스크 확정"으로 기록합니다.
+  </div>
+</footer>
 
 <script>
 "use strict";
@@ -688,6 +843,7 @@ function renderDesk(run) {
 }
 
 function renderRecords() {
+  renderRecent();
   const box = $("recordTable");
   box.textContent = "";
   if (records.length === 0) { box.appendChild(el("div", "note", "아직 저장된 기록이 없습니다.")); return; }
@@ -932,9 +1088,46 @@ $("extractBtn").onclick = async () => {
   }
 };
 
+// ===== 화면 구성 (탭, 키 설정 띠, 최근 검증) — 검색·판정 기능과는 무관 =====
+function showTab(name) {
+  document.querySelectorAll(".tab").forEach((b) => b.classList.toggle("on", b.dataset.tab === name));
+  $("paneVerify").hidden = name !== "verify";
+  $("paneArticle").hidden = name !== "article";
+  $("paneRecord").hidden = name !== "record";
+  $("out").hidden = name === "record";
+  $("paneCards").hidden = name !== "verify";
+}
+document.querySelectorAll(".tab").forEach((b) => { b.onclick = () => showTab(b.dataset.tab); });
+$("goRecord").onclick = () => showTab("record");
+$("logoLink").onclick = () => { showTab("verify"); window.scrollTo({ top: 0, behavior: "smooth" }); };
+$("keyToggle").onclick = () => { $("keyPanel").hidden = !$("keyPanel").hidden; };
+$("saveKeys").addEventListener("click", () => {
+  if ($("keyMsg").textContent.indexOf("저장했습니다") >= 0) $("keyPanel").hidden = true;
+});
+
+function renderRecent() {
+  const ul = $("recentList");
+  ul.textContent = "";
+  if (records.length === 0) { ul.appendChild(el("li", "empty", "아직 검증한 주장이 없습니다.")); return; }
+  records.slice(-8).reverse().forEach((r) => {
+    const li = document.createElement("li");
+    li.title = r.claim;
+    li.appendChild(el("span", "mini " + (VERDICT_CLASS[r.finalVerdict] || "v-hold"), r.finalVerdict));
+    li.appendChild(el("span", "c", r.claim));
+    li.onclick = () => { $("claim").value = r.claim; showTab("verify"); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    ul.appendChild(li);
+  });
+}
+
 loadKeys();
 loadRecords();
 renderRecords();
+showTab("verify");
+// 키가 하나도 없으면 처음 열 때 키 설정 띠를 펼친다.
+if (!$("tavilyKey").value && !$("geminiKey").value) {
+  $("keyPanel").hidden = false;
+  $("keyMsg").textContent = "처음 사용하시면 두 키를 입력하고 \"키 저장\"을 누르세요.";
+}
 </script>
 </body>
 </html>
